@@ -14,7 +14,7 @@ import re
 smtpserver = "smtp.gmail.com"
 port = 465
 senderemail = "zorerekin@gmail.com"
-receiveremail = "zorerekin@gmail.com,cjlaursen@gmail.com"
+receiveremail = "zorerekin@gmail.com"
 password = os.getenv("EMAIL_PASSWORD")
 
 instruments = [
@@ -120,42 +120,42 @@ def check_for_updates(url, hash_file):
 
 # Monitor multiple webpages and send a summary email
 def monitor_webpages(pages, interval=3600):
-    while True:
-        summary = []
-        changes_detected = False
+    summary = []
+    changes_detected = False
 
-        for page, hash_file in pages.items():
-            change_detected, all_openings, new_openings = check_for_updates(page, hash_file)
-            if change_detected:
-                if all_openings:
-                    openings_list = []
-                    for opening in all_openings:
-                        if opening in new_openings:
-                            openings_list.append(f"**{opening}** (NEW!)")
-                        else:
-                            openings_list.append(opening)
-                    summary.append(f"Current openings on {page}:\n" + "\n".join(openings_list) + "\n")
-                else:
-                    summary.append(f"No openings found on {page}.\n")
-                changes_detected = True
+    for page, hash_file in pages.items():
+        change_detected, all_openings, new_openings = check_for_updates(page, hash_file)
+        if change_detected:
+            if all_openings:
+                openings_list = []
+                for opening in all_openings:
+                    if opening in new_openings:
+                        openings_list.append(f"**{opening}** (NEW!)")
+                    else:
+                        openings_list.append(opening)
+                summary.append(f"Current openings on {page}:\n" + "\n".join(openings_list) + "\n")
             else:
-                if all_openings:
-                    summary.append(f"Current openings on {page}:\n" + "\n".join(all_openings) + "\n")
-                else:
-                    summary.append(f"No openings found on {page}.\n")
+                summary.append(f"No openings found on {page}.\n")
+            changes_detected = True
+        else:
+            if all_openings:
+                summary.append(f"Current openings on {page}:\n" + "\n".join(all_openings) + "\n")
+            else:
+                summary.append(f"No openings found on {page}.\n")
 
-        if not changes_detected:
-            summary.append("No changes detected on any of the monitored pages today!")
+    if not changes_detected:
+        summary.append("No changes detected on any of the monitored pages today!")
 
-        summary_body = "\n".join(summary)
+    summary_body = "\n".join(summary)
 
-        current_date = datetime.now().strftime("%B %d, %Y")
-        send_email(subject=f"US Orchestra Postings - {current_date}", body=summary_body)
+    current_date = datetime.now().strftime("%B %d, %Y")
+    send_email(subject=f"US Orchestra Postings - {current_date}", body=summary_body)
 
-        time.sleep(interval)  
+    return summary_body 
 
 
-if __name__ == "__main__":
+# Lambda handler function
+def lambda_handler(event, context):
     pages_to_monitor = {
         "https://www.bso.org/about/jobs/bso-auditions": "bso_auditions_hash.txt",
         "https://philorch.ensembleartsphilly.org/about-us/audition-for-the-philadelphia-orchestra": "philorch_auditions_hash.txt",
@@ -163,4 +163,8 @@ if __name__ == "__main__":
         "https://www.laphil.com/about/meet-the-orchestra/auditions": "laphil_auditions_hash.txt",
     }
 
-    monitor_webpages(pages_to_monitor)
+    return monitor_webpages(pages_to_monitor)
+
+
+if __name__ == "__main__":
+    lambda_handler(None, None)
