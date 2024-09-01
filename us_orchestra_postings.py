@@ -87,14 +87,17 @@ def find_current_openings_and_deadlines(soup):
 
 # Check for changes on a webpage
 def check_for_updates(url, hash_file):
+    # Use /tmp directory for writing files in AWS Lambda
+    hash_file_path = f"/tmp/{hash_file}"
+     
     new_hash, soup = get_page_hash_and_content(url)
     change_detected = False
     new_openings = []
     all_openings = find_current_openings_and_deadlines(soup)
 
     # Check if hash file exists
-    if os.path.exists(hash_file):
-        with open(hash_file, 'r') as file:
+    if os.path.exists(hash_file_path):
+        with open(hash_file_path, 'r') as file:
             old_hash = file.read()
 
         if new_hash != old_hash:
@@ -108,11 +111,11 @@ def check_for_updates(url, hash_file):
         change_detected = True
 
     # Save the current hash to the file
-    with open(hash_file, 'w') as file:
+    with open(hash_file_path, 'w') as file:
         file.write(new_hash)
 
     # Save the current openings to the file
-    with open(f"{hash_file}_openings.txt", 'w') as file:
+    with open(f"{hash_file_path}_openings.txt", 'w') as file:
         file.write("\n".join(all_openings))
 
     return change_detected, all_openings, new_openings
